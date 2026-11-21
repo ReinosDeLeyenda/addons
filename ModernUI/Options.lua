@@ -11,6 +11,7 @@ local MODULE_LABELS = {
     Achievements = "Ventana de Logros",
     Bags         = "Bolsas y Banco",
     Loot         = "Botín y Dados de Grupo/Banda (Loot y Roll)",
+    Guild        = "Ventana de Hermandad (Bloque doble independiente)",
     GuildBank    = "Banco de Hermandad (Bóvedas, registros e iconos)",
     SpellBook    = "Libro de Hechizos y Facultades",
     Talents      = "Árbol de Talentos",

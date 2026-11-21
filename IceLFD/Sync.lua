@@ -11,11 +11,13 @@ local lastInspectTime = 0
 local inspectWaitTimer = 0
 
 local msgQueue = {}
-local MAX_QUEUE_SIZE = 15
+local MAX_QUEUE_SIZE = 20
 local lastSendTime = 0
 local lastReqTime = 0
 local lastShareTime = 0
 local lastVerBroadcast = 0
+local initVerTimer = 0
+local initVerSent = false
 
 local lastSentPayload = {}
 local lastSentTimestamp = {}
@@ -155,8 +157,9 @@ function addon.GetLocalDungeonProgress()
 end
 
 function addon.CheckRemoteVersion(remoteVer, sender)
-    if not remoteVer or remoteVer == "" then return end
-    if addon.CompareVersions and addon.CompareVersions(remoteVer, addon.latestVersion) == 1 then
+    if not remoteVer or remoteVer == "" then return false end
+    local cmp = addon.CompareVersions and addon.CompareVersions(remoteVer, addon.latestVersion) or 0
+    if cmp == 1 then
         addon.latestVersion = remoteVer
         addon.versionOutdated = true
         if not addon.versionNotified then
@@ -167,15 +170,21 @@ function addon.CheckRemoteVersion(remoteVer, sender)
             addon.UpdatePartyDisplay()
         end
     end
+    return addon.CompareVersions and addon.CompareVersions(addon.VERSION, remoteVer) == 1
 end
 
-function addon.BroadcastVersion()
+function addon.BroadcastVersion(force)
     if not addon.VERSION then return end
-    if GetTime() - lastVerBroadcast < 30 then return end
+    if not force and (GetTime() - lastVerBroadcast < 20) then return end
     lastVerBroadcast = GetTime()
 
     local verPacket = string.format("%s;VER;%s", addon.TAG, addon.VERSION)
-    if GetNumPartyMembers() > 0 then
+    if IsInGuild() then
+        QueueAddonMessage(verPacket, "GUILD")
+    end
+    if GetNumRaidMembers() > 0 then
+        QueueAddonMessage(verPacket, "RAID")
+    elseif GetNumPartyMembers() > 0 then
         QueueAddonMessage(verPacket, "PARTY")
     end
     if EnsurePrivateChannel() then
@@ -281,7 +290,13 @@ local function HandleIncomingPacket(msg, sender)
     if cmd == "REQ" then
         addon.ShareAllKnownData()
     elseif cmd == "VER" then
-        addon.CheckRemoteVersion(guid, sender)
+        local cleanSender = sender and strsplit("-", sender) or ""
+        if cleanSender ~= UnitName("player") then
+            local iAmNewer = addon.CheckRemoteVersion(guid, sender)
+            if iAmNewer then
+                addon.BroadcastVersion(true)
+            end
+        end
     elseif cmd == "D" then
         local ilvl = tonumber(ilvlStr)
         if guid and ilvl and ilvl > 0 then
@@ -326,21 +341,33 @@ local function HandleIncomingPacket(msg, sender)
 end
 
 EventFrame:SetScript("OnUpdate", function(self, elapsed)
+    if not initVerSent then
+        initVerTimer = initVerTimer + elapsed
+        if initVerTimer >= 5 then
+            initVerSent = true
+            addon.BroadcastVersion(true)
+        end
+    end
+
     if not channelJoined then
         channelJoinTimer = channelJoinTimer + elapsed
         if channelJoinTimer >= 4 then
             channelJoined = true
             JoinTemporaryChannel(PRIVATE_CHANNEL_NAME)
-            if EnsurePrivateChannel() then
-                addon.BroadcastVersion()
-            end
+            EnsurePrivateChannel()
         end
     end
 
-    if #msgQueue > 0 and (GetTime() - lastSendTime >= 2.0) then
+    if #msgQueue > 0 and (GetTime() - lastSendTime >= 0.5) then
         local item = table.remove(msgQueue, 1)
         lastSendTime = GetTime()
-        if item.target == "PARTY" and GetNumPartyMembers() > 0 then
+        if item.target == "GUILD" and IsInGuild() then
+            SendAddonMessage(addon.PREFIX, item.msg, "GUILD")
+            addon.DebugPrint("Enviado [GUILD]: " .. item.msg)
+        elseif item.target == "RAID" and GetNumRaidMembers() > 0 then
+            SendAddonMessage(addon.PREFIX, item.msg, "RAID")
+            addon.DebugPrint("Enviado [RAID]: " .. item.msg)
+        elseif item.target == "PARTY" and GetNumPartyMembers() > 0 then
             SendAddonMessage(addon.PREFIX, item.msg, "PARTY")
             addon.DebugPrint("Enviado [PARTY]: " .. item.msg)
         elseif item.target == "CHANNEL" then
@@ -430,9 +457,7 @@ EventFrame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4, ar
             end
         end
     elseif event == "PLAYER_ENTERING_WORLD" or event == "CHANNEL_UI_UPDATE" then
-        if EnsurePrivateChannel() then
-            addon.BroadcastVersion()
-        end
+        EnsurePrivateChannel()
     elseif event == "CHAT_MSG_CHANNEL" and arg9 == PRIVATE_CHANNEL_NAME then
         HandleIncomingPacket(arg1, arg2)
     elseif event == "PARTY_MEMBERS_CHANGED" then

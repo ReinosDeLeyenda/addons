@@ -2,8 +2,8 @@
 ## Title: |cff66ccffModernUI|r
 ## Notes: Ventana de personaje unificada con equipo, mascotas, monturas y recetas.
 ## Author: Custom
-## Version: 3.0
-## SavedVariables: ModernCharacterUI_GlobalDB
+## Version: 3.6
+## SavedVariables: ModernCharacterUI_GlobalDB, ModernUI_GuildCache
 ## SavedVariablesPerCharacter: ModernCharacterUI_RecipesDB
 
 ItemSources.lua
@@ -55,6 +55,13 @@ Modulos\Tab_Talents.lua
 Modulos\Tab_Social.lua
 Modulos\Tab_Mail.lua
 Modulos\Tab_Loot.lua
+Modulos\Tab_Guild.lua
+Modulos\Tab_Guild_Control.lua
+Modulos\Tab_Guild_Detail.lua
+Modulos\Tab_Guild_Detail_Notes.lua
+Modulos\Tab_Guild_DungeonPie.lua
+Modulos\Tab_Guild_RaidPie.lua
+Modulos\Tab_Guild_Sync.lua
 Modulos\Tab_GuildBank.lua
 Modulos\Tab_Auction.lua
 Modulos\Tab_Dialogs.lua

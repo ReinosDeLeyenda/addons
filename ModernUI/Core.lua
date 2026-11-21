@@ -1,6 +1,6 @@
 local addonName, NS = ...
 
-NS.VERSION = GetAddOnMetadata(addonName, "Version") or "3.0"
+NS.VERSION = GetAddOnMetadata(addonName, "Version") or "3.6"
 NS.latestVersion = NS.VERSION
 NS.versionOutdated = false
 NS.versionNotified = false
@@ -36,6 +36,7 @@ NS.MODULES_LIST = {
     { id = "SpellBook",    init = "InitSpellBookTheme" },
     { id = "Talents",      init = "InitTalentsTheme" },
     { id = "Social",       init = "InitSocialTheme" },
+    { id = "Guild",        init = "InitGuildTheme" },
     { id = "Mail",         init = "InitMailTheme" },
     { id = "Auction",      init = "InitAuctionTheme" },
     { id = "Dialogs",      init = "InitDialogsTheme" },
