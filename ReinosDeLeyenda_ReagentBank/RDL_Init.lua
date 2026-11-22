@@ -19,6 +19,8 @@ local function QueueRefresh()
 end
 
 local events = {
+    "PLAYER_ENTERING_WORLD", "PARTY_MEMBERS_CHANGED", "RAID_ROSTER_UPDATE",
+    "CHAT_MSG_ADDON",
     "TRADE_SKILL_SHOW", "TRADE_SKILL_CLOSE", "TRADE_SKILL_UPDATE",
     "SKILL_LINES_CHANGED",
     "BANKFRAME_OPENED", "BANKFRAME_CLOSED",
@@ -39,8 +41,12 @@ RDL_GUI:HookScript("OnHide", function()
     end
 end)
 
-f:SetScript("OnEvent", function(_, ev, a1, a2)
-    if ev == "TRADE_SKILL_SHOW" then
+f:SetScript("OnEvent", function(_, ev, a1, a2, a3, a4)
+    if ev == "PLAYER_ENTERING_WORLD" or ev == "PARTY_MEMBERS_CHANGED" or ev == "RAID_ROSTER_UPDATE" then
+        RDL_Core.BroadcastVersion()
+    elseif ev == "CHAT_MSG_ADDON" then
+        RDL_Core.OnAddonMessage(a1, a2, a3, a4)
+    elseif ev == "TRADE_SKILL_SHOW" then
         if TradeSkillFrame then
             TradeSkillFrame:SetAlpha(0)
             TradeSkillFrame:EnableMouse(false)

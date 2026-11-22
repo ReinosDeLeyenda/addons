@@ -52,8 +52,9 @@ function RDL_ProfList.RenderTabs(parent)
                 tile = true, tileSize = 12, edgeSize = 10,
                 insets = { left = 2, right = 2, top = 2, bottom = 2 }
             })
-            btn:SetBackdropColor(0.08, 0.08, 0.12, 0.95)
-            btn:SetBackdropBorderColor(0.4, 0.4, 0.5, 1)
+            -- Fondo azul glaciar oscuro y borde hielo apagado
+            btn:SetBackdropColor(0.05, 0.14, 0.24, 0.95)
+            btn:SetBackdropBorderColor(0.28, 0.58, 0.80, 1)
 
             local icon = btn:CreateTexture(nil, "ARTWORK")
             icon:SetPoint("TOPLEFT", 2, -2)
@@ -63,7 +64,7 @@ function RDL_ProfList.RenderTabs(parent)
             btn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
             btn:SetScript("OnEnter", function(self)
                 GameTooltip:SetOwner(self, "ANCHOR_TOP")
-                GameTooltip:SetText(self.profName, 1, 0.82, 0)
+                GameTooltip:SetText(self.profName, 0.55, 0.90, 1.0)
                 GameTooltip:Show()
             end)
             btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -80,9 +81,10 @@ function RDL_ProfList.RenderTabs(parent)
         btn:SetPoint("TOPLEFT", parent, "TOPLEFT", 18 + ((idx - 1) * 32), -38)
 
         if active and (active == prof.name or active:find(prof.name, 1, true)) then
-            btn:SetBackdropBorderColor(0, 0.8, 1, 1)
+            -- Borde blanco hielo brillante para la profesion activa
+            btn:SetBackdropBorderColor(0.65, 0.95, 1.0, 1)
         else
-            btn:SetBackdropBorderColor(0.4, 0.4, 0.5, 1)
+            btn:SetBackdropBorderColor(0.28, 0.58, 0.80, 1)
         end
         btn:Show()
     end

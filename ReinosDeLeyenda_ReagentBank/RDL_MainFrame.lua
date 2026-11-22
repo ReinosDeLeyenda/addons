@@ -1,6 +1,6 @@
 RDL_GUI = CreateFrame("Frame", "RDL_MainProfessionFrame", UIParent)
 local gui = RDL_GUI
-gui:SetSize(560, 495) -- +35px de alto para la fila de profesiones superior
+gui:SetSize(560, 495)
 gui:SetPoint("CENTER")
 gui:SetFrameStrata("HIGH")
 gui:SetMovable(true)
@@ -11,26 +11,36 @@ gui:SetScript("OnDragStop", gui.StopMovingOrSizing)
 gui:Hide()
 tinsert(UISpecialFrames, "RDL_MainProfessionFrame")
 
+-- Textura tintable real para que el color azul hielo se vea vivo
 gui:SetBackdrop({
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
-    edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-    tile = true, tileSize = 32, edgeSize = 24,
-    insets = { left = 6, right = 6, top = 6, bottom = 6 }
+    bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    tile = true, tileSize = 16, edgeSize = 16,
+    insets = { left = 4, right = 4, top = 4, bottom = 4 }
 })
-gui:SetBackdropColor(0.05, 0.06, 0.09, 0.96)
+gui:SetBackdropColor(0.06, 0.22, 0.38, 0.94)
+gui:SetBackdropBorderColor(0.55, 0.90, 1.0, 1)
+
+-- Brillo/degradado superior estilo cristal de hielo
+local frostGrad = gui:CreateTexture(nil, "BACKGROUND", nil, 1)
+frostGrad:SetPoint("TOPLEFT", 4, -4)
+frostGrad:SetPoint("BOTTOMRIGHT", -4, 4)
+frostGrad:SetTexture("Interface\\ChatFrame\\ChatFrameBackground")
+frostGrad:SetGradientAlpha("VERTICAL", 0.04, 0.14, 0.26, 0.2, 0.35, 0.78, 1.0, 0.32)
 
 local title = gui:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 title:SetPoint("TOPLEFT", 18, -14)
-title:SetText("|cff00ccffReinos de leyenda|r - Profesiones")
+title:SetText("|cff9beeffReinos de leyenda|r |cffffffff- Profesiones|r |cff7ce0ffv" .. (RDL_Core.VERSION or "3.6") .. "|r")
 
 gui.subTitle = gui:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 gui.subTitle:SetPoint("TOPRIGHT", -38, -18)
+gui.subTitle:SetTextColor(0.80, 0.95, 1.0)
 
 local closeBtn = CreateFrame("Button", nil, gui, "UIPanelCloseButton")
-closeBtn:SetPoint("TOPRIGHT", -6, -6)
+closeBtn:SetPoint("TOPRIGHT", -4, -4)
 closeBtn:SetScript("OnClick", function() CloseTradeSkill(); gui:Hide() end)
 
--- BARRA DE FILTROS Y DESENCANTAR (Bajados 34px para dejar sitio a los iconos arriba)
+-- BARRA DE FILTROS Y DESENCANTAR
 local searchBox = CreateFrame("EditBox", "RDL_SearchBox", gui, "InputBoxTemplate")
 searchBox:SetSize(165, 22)
 searchBox:SetPoint("TOPLEFT", 22, -76)
@@ -40,7 +50,7 @@ searchBox:SetScript("OnTextChanged", function(self) SetTradeSkillItemNameFilter(
 gui.onlyMats = CreateFrame("CheckButton", "RDL_OnlyMats", gui, "UICheckButtonTemplate")
 gui.onlyMats:SetSize(24, 24)
 gui.onlyMats:SetPoint("LEFT", searchBox, "RIGHT", 6, 0)
-_G["RDL_OnlyMatsText"]:SetText("Con materiales")
+_G["RDL_OnlyMatsText"]:SetText("|cffd4f4ffCon materiales|r")
 
 gui.deOpenBtn = CreateFrame("Button", "RDL_OpenDEBtn", gui, "UIPanelButtonTemplate")
 gui.deOpenBtn:SetSize(95, 22)
@@ -56,12 +66,13 @@ local listPanel = CreateFrame("Frame", nil, gui)
 listPanel:SetSize(250, 365)
 listPanel:SetPoint("TOPLEFT", 16, -106)
 listPanel:SetBackdrop({
-    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+    bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
     tile = true, tileSize = 16, edgeSize = 12,
     insets = { left = 3, right = 3, top = 3, bottom = 3 }
 })
-listPanel:SetBackdropColor(0.03, 0.03, 0.05, 0.9)
+listPanel:SetBackdropColor(0.03, 0.13, 0.24, 0.88)
+listPanel:SetBackdropBorderColor(0.45, 0.85, 1.0, 0.95)
 
 gui.scrollFrame = CreateFrame("ScrollFrame", "RDL_RecipeScroll", listPanel, "FauxScrollFrameTemplate")
 gui.scrollFrame:SetPoint("TOPLEFT", 4, -6)
@@ -85,12 +96,13 @@ local detailPanel = CreateFrame("Frame", nil, gui)
 detailPanel:SetSize(270, 365)
 detailPanel:SetPoint("TOPLEFT", listPanel, "TOPRIGHT", 8, 0)
 detailPanel:SetBackdrop({
-    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+    bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
     tile = true, tileSize = 16, edgeSize = 12,
     insets = { left = 3, right = 3, top = 3, bottom = 3 }
 })
-detailPanel:SetBackdropColor(0.04, 0.04, 0.07, 0.9)
+detailPanel:SetBackdropColor(0.04, 0.16, 0.29, 0.88)
+detailPanel:SetBackdropBorderColor(0.45, 0.85, 1.0, 0.95)
 
 gui.itemIcon = CreateFrame("Button", nil, detailPanel)
 gui.itemIcon:SetSize(40, 40)
@@ -102,13 +114,14 @@ gui.itemTitle = detailPanel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 gui.itemTitle:SetPoint("LEFT", gui.itemIcon, "RIGHT", 8, 6)
 gui.itemTitle:SetPoint("RIGHT", -10, 6)
 gui.itemTitle:SetJustifyH("LEFT")
+gui.itemTitle:SetTextColor(0.85, 0.96, 1.0)
 
 gui.itemSub = detailPanel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 gui.itemSub:SetPoint("TOPLEFT", gui.itemTitle, "BOTTOMLEFT", 0, -4)
 
 local reqHeader = detailPanel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 reqHeader:SetPoint("TOPLEFT", 12, -68)
-reqHeader:SetText("Componentes:")
+reqHeader:SetText("|cff8ce6ffComponentes:|r")
 
 gui.reagentRows = {}
 for i = 1, 8 do

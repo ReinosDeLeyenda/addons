@@ -2,6 +2,11 @@ RDL_BankCache = RDL_BankCache or {}
 RDL_ReagentBankCache = RDL_ReagentBankCache or {}
 RDL_Core = {}
 
+RDL_Core.VERSION = "3.6"
+local ADDON_PREFIX = "RDL_PROF_VER"
+local updateNotified = false
+local highestSeenVersion = RDL_Core.VERSION
+
 local bankOpen, guildBankOpen = false, false
 local qSpell, qName, qRem = nil, nil, 0
 local lastCraftedGearID = nil
@@ -10,6 +15,59 @@ local timerFrame = CreateFrame("Frame")
 local countCache = {}
 
 local BANK_BAGS = { -1, 5, 6, 7, 8, 9, 10, 11 }
+
+-- Compara versiones tipo "3.6" vs "3.10"
+local function IsVersionNewer(remoteVer, localVer)
+    if not remoteVer or not localVer then return false end
+    local r1, r2, r3 = remoteVer:match("^(%d+)%.?(%d*)%.?(%d*)")
+    local l1, l2, l3 = localVer:match("^(%d+)%.?(%d*)%.?(%d*)")
+    r1, r2, r3 = tonumber(r1) or 0, tonumber(r2) or 0, tonumber(r3) or 0
+    l1, l2, l3 = tonumber(l1) or 0, tonumber(l2) or 0, tonumber(l3) or 0
+    if r1 ~= l1 then return r1 > l1 end
+    if r2 ~= l2 then return r2 > l2 end
+    return r3 > l3
+end
+
+function RDL_Core.BroadcastVersion(targetChannel, targetWhisper)
+    local msg = "VER:" .. RDL_Core.VERSION
+    if targetChannel then
+        SendAddonMessage(ADDON_PREFIX, msg, targetChannel, targetWhisper)
+        return
+    end
+    if IsInGuild() then
+        SendAddonMessage(ADDON_PREFIX, msg, "GUILD")
+    end
+    if GetNumRaidMembers() > 0 then
+        SendAddonMessage(ADDON_PREFIX, msg, "RAID")
+    elseif GetNumPartyMembers() > 0 then
+        SendAddonMessage(ADDON_PREFIX, msg, "PARTY")
+    end
+end
+
+function RDL_Core.OnAddonMessage(prefix, msg, channel, sender)
+    if prefix ~= ADDON_PREFIX or not msg then return end
+    if sender == UnitName("player") then return end
+
+    local cmd, ver = msg:match("^(%u+):([%d%.]+)$")
+    if not ver then return end
+
+    if IsVersionNewer(ver, highestSeenVersion) then
+        highestSeenVersion = ver
+        if not updateNotified then
+            updateNotified = true
+            print("|cff7ce0ff[Reinos de leyenda - Profesiones]|r ¡Nueva version disponible: |cffffffffv" .. ver .. "|r (tienes la v" .. RDL_Core.VERSION .. "). Descargala desde la web o Discord del servidor.")
+        end
+    elseif cmd == "VER" and IsVersionNewer(RDL_Core.VERSION, ver) then
+        -- Si otro jugador tiene una version antigua, le respondemos en silencio para avisarle
+        RDL_Core.BroadcastVersion("WHISPER", sender)
+    end
+end
+
+SLASH_RDLPROF1 = "/rdlprof"
+SlashCmdList["RDLPROF"] = function()
+    RDL_Core.BroadcastVersion()
+    print("|cff7ce0ff[Reinos de leyenda - Profesiones]|r Version instalada: |cffffffffv" .. RDL_Core.VERSION .. "|r (Maxima detectada: v" .. highestSeenVersion .. ").")
+end
 
 function RDL_Core.ClearCountCache()
     wipe(countCache)
@@ -92,7 +150,6 @@ local function FindFreeBankSlot()
     return nil, nil
 end
 
--- Mueve a los huecos libres del banco cualquier pieza de ropa/arma recien creada que este en mochila
 function RDL_Core.TryStoreCraftedGearInBank()
     if not bankOpen or not pendingBankStoreID then return end
     if InCombatLockdown() or CursorHasItem() then return end
@@ -172,7 +229,6 @@ function RDL_Core.Craft(id, n)
 end
 
 function RDL_Core.OnSpellSucceeded(spellName)
-    -- Si estamos con el banco abierto y hemos fabricado una pieza de equipo, marcamos para guardarla al caer en bolsa
     if bankOpen and lastCraftedGearID then
         local sel = GetTradeSkillSelectionIndex()
         local currentSkillName = sel and sel > 0 and GetTradeSkillInfo(sel)

@@ -8,7 +8,7 @@ local COLORS = {
     medium  = {1.0, 1.0, 0.0},
     easy    = {0.25, 0.75, 0.25},
     trivial = {0.5, 0.5, 0.5},
-    header  = {1.0, 0.82, 0.0}
+    header  = {0.48, 0.88, 1.0} -- Encabezados en azul hielo
 }
 
 local function GetCachedReagentID(skillIdx, reagentIdx)
@@ -67,10 +67,10 @@ for i = 1, 8 do
         GameTooltip:SetTradeSkillItem(sel, i)
         local b, p, v = RDL_Core.GetBreakdownCounts(self.itemID)
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("|cff00ccffInventario Reinos de leyenda:|r")
+        GameTooltip:AddLine("|cff7ce0ffInventario Reinos de leyenda:|r")
         GameTooltip:AddDoubleLine("  Mochila:", tostring(b), 0.9, 0.9, 0.9, 1, 1, 1)
-        GameTooltip:AddDoubleLine("  Banco personal:", tostring(p), 0.9, 0.9, 0.9, 0.4, 0.8, 1)
-        GameTooltip:AddDoubleLine("  Boveda de Componentes:", tostring(v), 0.9, 0.9, 0.9, 0.2, 1, 0.5)
+        GameTooltip:AddDoubleLine("  Banco personal:", tostring(p), 0.9, 0.9, 0.9, 0.4, 0.85, 1)
+        GameTooltip:AddDoubleLine("  Boveda de Componentes:", tostring(v), 0.9, 0.9, 0.9, 0.2, 1, 0.65)
         GameTooltip:Show()
     end)
     rb:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -142,8 +142,8 @@ function RDL_MainFrame_UpdateDetails()
             rb.name:SetText(rName or "")
             rb.count:SetText(tot .. " / " .. (req or 1))
             local ok = tot >= (req or 1)
-            rb.name:SetTextColor(ok and 1 or 0.5, ok and 1 or 0.5, ok and 1 or 0.5)
-            rb.count:SetTextColor(ok and 0.2 or 1, ok and 1 or 0.3, ok and 0.4 or 0.3)
+            rb.name:SetTextColor(ok and 0.9 or 0.5, ok and 0.97 or 0.5, ok and 1 or 0.5)
+            rb.count:SetTextColor(ok and 0.45 or 1, ok and 0.95 or 0.3, ok and 1 or 0.3)
             rb.icon:SetVertexColor(ok and 1 or 0.5, ok and 1 or 0.5, ok and 1 or 0.5)
             if req and req > 0 then maxC = math.min(maxC, math.floor(tot / req)) end
             rb:Show()
@@ -153,7 +153,7 @@ function RDL_MainFrame_UpdateDetails()
     end
 
     if maxC > 0 and maxC < 999 then
-        gui.itemSub:SetText("|cff33ff66Puedes fabricar: " .. maxC .. "|r")
+        gui.itemSub:SetText("|cff66e5ffPuedes fabricar: " .. maxC .. "|r")
         gui.createAllBtn:SetText("Crear todos [" .. maxC .. "]")
     else
         gui.itemSub:SetText("|cffff5555Faltan materiales|r")
@@ -180,8 +180,8 @@ function RDL_MainFrame_RenderRows()
                 row.text:SetText((isExp and "- " or "+ ") .. (name or ""))
             else
                 local maxC = craftableCache[skillIdx] or 0
-                local prefix = (skillIdx == sel) and "|cff00ccff> |r" or "   "
-                local suffix = (maxC > 0) and (" |cff33ff66[" .. maxC .. "]|r") or ""
+                local prefix = (skillIdx == sel) and "|cff7ce0ff> |r" or "   "
+                local suffix = (maxC > 0) and (" |cff66e5ff[" .. maxC .. "]|r") or ""
                 row.text:SetText(prefix .. (name or "") .. suffix)
             end
             row:Show()
@@ -206,11 +206,9 @@ function RDL_MainFrame_UpdateList()
             if not onlyMats then
                 table.insert(filteredIndices, i)
             elseif not isExp then
-                -- Si la categoría está contraída (+), la mostramos para permitir expandirla
                 table.insert(filteredIndices, i)
                 pendingHeader = nil
             else
-                -- Si está desplegada (-), esperamos a ver si tiene al menos 1 receta fabricable
                 pendingHeader = i
             end
         else
