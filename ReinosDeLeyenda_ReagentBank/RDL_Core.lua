@@ -2,21 +2,24 @@ RDL_BankCache = RDL_BankCache or {}
 RDL_ReagentBankCache = RDL_ReagentBankCache or {}
 RDL_Core = {}
 
-RDL_Core.VERSION = "3.6"
+RDL_Core.VERSION = "3.6.1"
 local ADDON_PREFIX = "RDL_PROF_VER"
 local updateNotified = false
 local highestSeenVersion = RDL_Core.VERSION
 
 local bankOpen, guildBankOpen = false, false
 local qSpell, qName, qRem = nil, nil, 0
-local lastCraftedGearID = nil
-local pendingBankStoreID = nil
+local lastCraftedGearID, pendingBankStoreID = nil, nil
 local timerFrame = CreateFrame("Frame")
 local countCache = {}
-
 local BANK_BAGS = { -1, 5, 6, 7, 8, 9, 10, 11 }
 
--- Compara versiones tipo "3.6" vs "3.10"
+function RDL_Core.IsEquippableGear(linkOrID)
+    if not linkOrID then return false end
+    local _, _, _, _, _, itemType, _, _, equipLoc = GetItemInfo(linkOrID)
+    return (itemType == "Armor" or itemType == "Weapon" or itemType == "Armadura" or itemType == "Arma") and equipLoc ~= ""
+end
+
 local function IsVersionNewer(remoteVer, localVer)
     if not remoteVer or not localVer then return false end
     local r1, r2, r3 = remoteVer:match("^(%d+)%.?(%d*)%.?(%d*)")
@@ -34,9 +37,7 @@ function RDL_Core.BroadcastVersion(targetChannel, targetWhisper)
         SendAddonMessage(ADDON_PREFIX, msg, targetChannel, targetWhisper)
         return
     end
-    if IsInGuild() then
-        SendAddonMessage(ADDON_PREFIX, msg, "GUILD")
-    end
+    if IsInGuild() then SendAddonMessage(ADDON_PREFIX, msg, "GUILD") end
     if GetNumRaidMembers() > 0 then
         SendAddonMessage(ADDON_PREFIX, msg, "RAID")
     elseif GetNumPartyMembers() > 0 then
@@ -45,9 +46,7 @@ function RDL_Core.BroadcastVersion(targetChannel, targetWhisper)
 end
 
 function RDL_Core.OnAddonMessage(prefix, msg, channel, sender)
-    if prefix ~= ADDON_PREFIX or not msg then return end
-    if sender == UnitName("player") then return end
-
+    if prefix ~= ADDON_PREFIX or not msg or sender == UnitName("player") then return end
     local cmd, ver = msg:match("^(%u+):([%d%.]+)$")
     if not ver then return end
 
@@ -55,10 +54,9 @@ function RDL_Core.OnAddonMessage(prefix, msg, channel, sender)
         highestSeenVersion = ver
         if not updateNotified then
             updateNotified = true
-            print("|cff7ce0ff[Reinos de leyenda - Profesiones]|r ¡Nueva version disponible: |cffffffffv" .. ver .. "|r (tienes la v" .. RDL_Core.VERSION .. "). Descargala desde la web o Discord del servidor.")
+            print(RDL_Theme.hexAccent .. "[Reinos de leyenda - Profesiones]|r ¡Nueva version disponible: |cffffffffv" .. ver .. "|r (tienes la v" .. RDL_Core.VERSION .. ").")
         end
     elseif cmd == "VER" and IsVersionNewer(RDL_Core.VERSION, ver) then
-        -- Si otro jugador tiene una version antigua, le respondemos en silencio para avisarle
         RDL_Core.BroadcastVersion("WHISPER", sender)
     end
 end
@@ -66,19 +64,14 @@ end
 SLASH_RDLPROF1 = "/rdlprof"
 SlashCmdList["RDLPROF"] = function()
     RDL_Core.BroadcastVersion()
-    print("|cff7ce0ff[Reinos de leyenda - Profesiones]|r Version instalada: |cffffffffv" .. RDL_Core.VERSION .. "|r (Maxima detectada: v" .. highestSeenVersion .. ").")
+    print(RDL_Theme.hexAccent .. "[Reinos de leyenda - Profesiones]|r Version instalada: |cffffffffv" .. RDL_Core.VERSION .. "|r (Maxima detectada: v" .. highestSeenVersion .. ").")
 end
 
-function RDL_Core.ClearCountCache()
-    wipe(countCache)
-end
+function RDL_Core.ClearCountCache() wipe(countCache) end
 
 function RDL_Core.SetBankOpen(s)
     bankOpen = s
-    if not s then
-        pendingBankStoreID = nil
-        lastCraftedGearID = nil
-    end
+    if not s then pendingBankStoreID = nil; lastCraftedGearID = nil end
 end
 
 function RDL_Core.IsBankOpen() return bankOpen end
@@ -87,14 +80,10 @@ function RDL_Core.SetGuildBankOpen(s) guildBankOpen = s end
 function RDL_Core.ScanBank()
     if not bankOpen then return end
     local t = {}
-    for s = 1, 28 do
-        local id = GetContainerItemID(-1, s)
-        if id then local _, c = GetContainerItemInfo(-1, s); t[id] = (t[id] or 0) + (c or 1) end
-    end
-    for b = 5, 11 do
-        for s = 1, GetContainerNumSlots(b) do
-            local id = GetContainerItemID(b, s)
-            if id then local _, c = GetContainerItemInfo(b, s); t[id] = (t[id] or 0) + (c or 1) end
+    for _, bag in ipairs(BANK_BAGS) do
+        for s = 1, GetContainerNumSlots(bag) do
+            local id = GetContainerItemID(bag, s)
+            if id then local _, c = GetContainerItemInfo(bag, s); t[id] = (t[id] or 0) + (c or 1) end
         end
     end
     RDL_BankCache = t
@@ -121,9 +110,7 @@ end
 function RDL_Core.GetBreakdownCounts(id)
     if not id then return 0, 0, 0 end
     local cached = countCache[id]
-    if cached then
-        return cached[1], cached[2], cached[3]
-    end
+    if cached then return cached[1], cached[2], cached[3] end
     local inBags = GetItemCount(id, false) or 0
     local inPersonal = bankOpen and ((GetItemCount(id, true) or 0) - inBags) or (RDL_BankCache[id] or 0)
     local inVault = RDL_ReagentBankCache[id] or 0
@@ -138,22 +125,15 @@ end
 
 local function FindFreeBankSlot()
     for _, bag in ipairs(BANK_BAGS) do
-        local slots = GetContainerNumSlots(bag)
-        if slots and slots > 0 then
-            for slot = 1, slots do
-                if not GetContainerItemID(bag, slot) then
-                    return bag, slot
-                end
-            end
+        for slot = 1, (GetContainerNumSlots(bag) or 0) do
+            if not GetContainerItemID(bag, slot) then return bag, slot end
         end
     end
     return nil, nil
 end
 
 function RDL_Core.TryStoreCraftedGearInBank()
-    if not bankOpen or not pendingBankStoreID then return end
-    if InCombatLockdown() or CursorHasItem() then return end
-
+    if not bankOpen or not pendingBankStoreID or InCombatLockdown() or CursorHasItem() then return end
     local movedAny = false
     for bag = 0, 4 do
         for slot = 1, GetContainerNumSlots(bag) do
@@ -161,10 +141,7 @@ function RDL_Core.TryStoreCraftedGearInBank()
                 local _, _, locked = GetContainerItemInfo(bag, slot)
                 if not locked then
                     local destBag, destSlot = FindFreeBankSlot()
-                    if not destBag or not destSlot then
-                        pendingBankStoreID = nil
-                        return
-                    end
+                    if not destBag then pendingBankStoreID = nil; return end
                     PickupContainerItem(bag, slot)
                     PickupContainerItem(destBag, destSlot)
                     movedAny = true
@@ -172,25 +149,7 @@ function RDL_Core.TryStoreCraftedGearInBank()
             end
         end
     end
-
-    if movedAny then
-        pendingBankStoreID = nil
-    end
-end
-
-local function TrackCraftedItem(skillIndex)
-    lastCraftedGearID = nil
-    if not skillIndex or skillIndex <= 0 then return end
-    local itemLink = GetTradeSkillItemLink(skillIndex)
-    if not itemLink then return end
-    local itemID = tonumber(itemLink:match("item:(%d+)"))
-    if not itemID then return end
-
-    local _, _, _, _, _, itemType, _, _, equipLoc = GetItemInfo(itemLink)
-    local isGear = (itemType == "Armor" or itemType == "Weapon" or itemType == "Armadura" or itemType == "Arma") and equipLoc ~= ""
-    if isGear then
-        lastCraftedGearID = itemID
-    end
+    if movedAny then pendingBankStoreID = nil end
 end
 
 local function ScheduleNextCraft()
@@ -212,12 +171,12 @@ end
 function RDL_Core.Craft(id, n)
     local _, _, avail = GetTradeSkillInfo(id)
     n = math.max(1, n or 1)
-    TrackCraftedItem(id)
+    lastCraftedGearID = nil
+    local itemLink = id and id > 0 and GetTradeSkillItemLink(id)
+    local itemID = itemLink and tonumber(itemLink:match("item:(%d+)"))
+    if itemID and RDL_Core.IsEquippableGear(itemLink) then lastCraftedGearID = itemID end
 
-    if (avail or 0) >= n then
-        DoTradeSkill(id, n)
-        return
-    end
+    if (avail or 0) >= n then DoTradeSkill(id, n); return end
     local link = GetTradeSkillRecipeLink(id) or ""
     local sp = link:match("enchant:(%d+)") or link:match("spell:(%d+)")
     local skillName = GetTradeSkillInfo(id)
@@ -231,12 +190,10 @@ end
 function RDL_Core.OnSpellSucceeded(spellName)
     if bankOpen and lastCraftedGearID then
         local sel = GetTradeSkillSelectionIndex()
-        local currentSkillName = sel and sel > 0 and GetTradeSkillInfo(sel)
-        if spellName == qName or spellName == currentSkillName then
+        if spellName == qName or (sel and sel > 0 and spellName == GetTradeSkillInfo(sel)) then
             pendingBankStoreID = lastCraftedGearID
         end
     end
-
     if not qName or spellName ~= qName then return end
     local sel = GetTradeSkillSelectionIndex()
     if sel and sel > 0 then
