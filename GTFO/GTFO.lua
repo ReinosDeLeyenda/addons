@@ -9,7 +9,7 @@ Usage: /GTFO or go to Interface->Add-ons
 ]]--
 
 GTFO = {
-	Version = "2.5.3"; -- Version number (text format)
+	Version = "2.5.4"; -- Version number (text format)
 	VersionNumber = 20503; -- Numeric version number for checking out-of-date clients
 	DataCode = "3"; -- Saved Variable versioning, change this value to force a reset to default
 	DebugMode = nil; -- Turn on debug alerts
