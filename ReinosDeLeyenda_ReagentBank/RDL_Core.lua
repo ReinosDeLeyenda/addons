@@ -2,7 +2,7 @@ RDL_BankCache = RDL_BankCache or {}
 RDL_ReagentBankCache = RDL_ReagentBankCache or {}
 RDL_Core = {}
 
-RDL_Core.VERSION = "3.6.1"
+RDL_Core.VERSION = "3.6.2"
 local ADDON_PREFIX = "RDL_PROF_VER"
 local updateNotified = false
 local highestSeenVersion = RDL_Core.VERSION

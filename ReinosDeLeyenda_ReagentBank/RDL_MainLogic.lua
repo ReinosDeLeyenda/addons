@@ -103,6 +103,7 @@ for i = 1, 17 do
 end
 
 gui.createBtn:SetScript("OnClick", function()
+    if IsTradeSkillLinked() then return end
     local sel = GetTradeSkillSelectionIndex()
     local n = math.max(1, tonumber(gui.qtyBox:GetText()) or 1)
     if sel and sel > 0 then RDL_Core.Craft(sel, n) end
@@ -110,6 +111,7 @@ gui.createBtn:SetScript("OnClick", function()
 end)
 
 gui.createAllBtn:SetScript("OnClick", function()
+    if IsTradeSkillLinked() then return end
     local sel = GetTradeSkillSelectionIndex()
     if not sel or sel <= 0 then return end
     local maxC = craftableCache[sel] or ComputeMaxCraftable(sel)
@@ -128,6 +130,17 @@ function RDL_MainFrame_UpdateDetails()
     gui.itemTitle:SetText(name or "")
     gui.itemIcon.tex:SetTexture(GetTradeSkillIcon(sel))
     gui.createBtn:SetText(altVerb or "Crear")
+
+    local isLinked = IsTradeSkillLinked()
+    if isLinked then
+        gui.createBtn:Disable()
+        gui.createAllBtn:Disable()
+        gui.qtyBox:Hide()
+    else
+        gui.createBtn:Enable()
+        gui.createAllBtn:Enable()
+        gui.qtyBox:Show()
+    end
 
     local maxC = 999
     local numReq = GetTradeSkillNumReagents(sel)
@@ -152,7 +165,10 @@ function RDL_MainFrame_UpdateDetails()
         end
     end
 
-    if maxC > 0 and maxC < 999 then
+    if isLinked then
+        gui.itemSub:SetText("|cff9beeffVista previa de enlace|r")
+        gui.createAllBtn:SetText("Crear todos")
+    elseif maxC > 0 and maxC < 999 then
         gui.itemSub:SetText("|cff66e5ffPuedes fabricar: " .. maxC .. "|r")
         gui.createAllBtn:SetText("Crear todos [" .. maxC .. "]")
     else
@@ -233,8 +249,13 @@ end)
 
 function RDL_MainFrame_Refresh()
     local pName, rank, maxRank = GetTradeSkillLine()
+    local isLinked, linkedName = IsTradeSkillLinked()
     if pName and pName ~= "UNKNOWN" then
-        gui.subTitle:SetText(pName .. " (" .. (rank or 0) .. " / " .. (maxRank or 0) .. ")")
+        local ownerTag = (isLinked and linkedName) and (" - |cffffffff" .. linkedName .. "|r") or ""
+        gui.subTitle:SetText(pName .. ownerTag .. " (" .. (rank or 0) .. " / " .. (maxRank or 0) .. ")")
+    end
+    if gui.linkBtn then
+        if isLinked then gui.linkBtn:Hide() else gui.linkBtn:Show() end
     end
     RDL_ProfList.RenderTabs(gui)
     RDL_MainFrame_UpdateList()

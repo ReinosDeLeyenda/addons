@@ -42,7 +42,7 @@ closeBtn:SetScript("OnClick", function() CloseTradeSkill(); gui:Hide() end)
 
 -- BARRA DE FILTROS Y DESENCANTAR
 local searchBox = CreateFrame("EditBox", "RDL_SearchBox", gui, "InputBoxTemplate")
-searchBox:SetSize(165, 22)
+searchBox:SetSize(145, 22)
 searchBox:SetPoint("TOPLEFT", 22, -76)
 searchBox:SetAutoFocus(false)
 searchBox:SetScript("OnTextChanged", function(self) SetTradeSkillItemNameFilter(self:GetText()) end)
@@ -51,15 +51,29 @@ gui.onlyMats = CreateFrame("CheckButton", "RDL_OnlyMats", gui, "UICheckButtonTem
 gui.onlyMats:SetSize(24, 24)
 gui.onlyMats:SetPoint("LEFT", searchBox, "RIGHT", 6, 0)
 _G["RDL_OnlyMatsText"]:SetText("|cffd4f4ffCon materiales|r")
+gui.onlyMats:SetScript("OnClick", function() RDL_MainFrame_Refresh() end)
 
 gui.deOpenBtn = CreateFrame("Button", "RDL_OpenDEBtn", gui, "UIPanelButtonTemplate")
-gui.deOpenBtn:SetSize(95, 22)
+gui.deOpenBtn:SetSize(92, 22)
 gui.deOpenBtn:SetPoint("TOPRIGHT", -18, -76)
 gui.deOpenBtn:SetText("Desencantar")
 gui.deOpenBtn:SetScript("OnClick", function()
     if RDL_Disenchant then RDL_Disenchant.ToggleSelector() end
 end)
-gui.onlyMats:SetScript("OnClick", function() RDL_MainFrame_Refresh() end)
+
+gui.linkBtn = CreateFrame("Button", "RDL_LinkProfBtn", gui, "UIPanelButtonTemplate")
+gui.linkBtn:SetSize(68, 22)
+gui.linkBtn:SetPoint("RIGHT", gui.deOpenBtn, "LEFT", -4, 0)
+gui.linkBtn:SetText("Enlazar")
+gui.linkBtn:SetScript("OnClick", function()
+    local link = GetTradeSkillListLink()
+    if not link then return end
+    if ChatEdit_GetActiveWindow() then
+        ChatEdit_InsertLink(link)
+    else
+        ChatFrame_OpenChat(link)
+    end
+end)
 
 -- PANEL IZQUIERDO: LISTA DE RECETAS
 local listPanel = CreateFrame("Frame", nil, gui)
